@@ -8,7 +8,8 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
 - ✅ Système de listes multiples par serveur
 - ✅ Gestion complète des listes et tâches
 - ✅ Commandes slash implémentées avec autocomplete
-- ✅ Messages éphémères pour confirmations d'ajout de tâches
+- ✅ Messages éphémères pour confirmations (add, complete, delete)
+- ✅ Dashboard auto-mise à jour pour chaque liste
 - ⏳ En attente du token Discord pour démarrer
 
 ## Architecture du projet
@@ -34,6 +35,7 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
 3. `/list delete` - Supprimer une liste entière
    - Paramètre: `titre` (nom de la liste à supprimer, requis)
    - ⚠️ Supprime la liste ET toutes ses tâches
+   - 🗑️ Supprime également le dashboard associé dans le canal
    - Exemple: `/list delete titre:Courses`
 
 ### Commandes de gestion des tâches
@@ -43,6 +45,7 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
    - Paramètre: `liste` (nom de la liste, optionnel avec autocomplete)
    - Si aucune liste n'est spécifiée, utilise la liste par défaut "Tâches"
    - 🔒 Message de confirmation visible uniquement pour vous (éphémère)
+   - 📊 Met à jour automatiquement le dashboard de la liste dans le canal
    - Exemple: `/todo add tache:Acheter du pain liste:Courses`
 
 2. `/todo view` - Afficher les tâches d'une liste
@@ -54,11 +57,15 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
 3. `/todo complete` - Marquer une tâche comme complétée
    - Paramètre: `numero` (numéro de la tâche, requis)
    - Paramètre: `liste` (nom de la liste, optionnel avec autocomplete)
+   - 🔒 Message de confirmation visible uniquement pour vous (éphémère)
+   - 📊 Met à jour automatiquement le dashboard de la liste dans le canal
    - Exemple: `/todo complete numero:1 liste:Courses`
 
 4. `/todo delete` - Supprimer une tâche
    - Paramètre: `numero` (numéro de la tâche, requis)
    - Paramètre: `liste` (nom de la liste, optionnel avec autocomplete)
+   - 🔒 Message de confirmation visible uniquement pour vous (éphémère)
+   - 📊 Met à jour automatiquement le dashboard de la liste dans le canal
    - Exemple: `/todo delete numero:2 liste:Courses`
 
 ### Caractéristiques techniques
@@ -71,7 +78,11 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
 - IDs de tâches uniques et persistants (ne sont jamais réutilisés)
 - Distinction visuelle entre tâches actives (⬜) et complétées (✅)
 - Autocomplete intelligent pour la sélection de listes (filtre en temps réel)
-- Messages éphémères pour les confirmations d'ajout (visibles uniquement par l'utilisateur)
+- Messages éphémères pour les confirmations (add, complete, delete) - visibles uniquement par l'utilisateur
+- **Dashboard auto-mise à jour** : Chaque liste a un message qui se met à jour automatiquement lors des modifications
+  - Le dashboard s'édite dans le même canal (pas de spam)
+  - Si vous changez de canal, un nouveau dashboard est créé et l'ancien est supprimé
+  - Le dashboard est supprimé automatiquement lors de la suppression de la liste
 
 ## Configuration requise
 
