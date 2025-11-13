@@ -13,7 +13,8 @@ function getGuild(guildId) {
   if (!guilds.has(guildId)) {
     guilds.set(guildId, {
       lists: new Map(),
-      defaultList: 'Tâches'
+      defaultList: 'Tâches',
+      dashboards: new Map()
     });
     const guild = guilds.get(guildId);
     guild.lists.set('Tâches', { tasks: [], counter: 0 });
@@ -43,6 +44,92 @@ function getNextId(guildId, listName) {
   if (!list) return null;
   list.counter++;
   return list.counter;
+}
+
+function buildListEmbed(listName, list) {
+  if (list.tasks.length === 0) {
+    return new EmbedBuilder()
+      .setColor(0xFFAA00)
+      .setTitle(`📝 ${listName}`)
+      .setDescription('Aucune tâche pour le moment.')
+      .setTimestamp();
+  }
+  
+  const activeTodos = list.tasks.filter(t => !t.completed);
+  const completedTodos = list.tasks.filter(t => t.completed);
+  
+  let description = '';
+  
+  if (activeTodos.length > 0) {
+    description += '**📋 Tâches actives:**\n';
+    activeTodos.forEach(todo => {
+      description += `⬜ **#${todo.id}** - ${todo.task}\n`;
+    });
+  }
+  
+  if (completedTodos.length > 0) {
+    if (description) description += '\n';
+    description += '**✅ Tâches complétées:**\n';
+    completedTodos.forEach(todo => {
+      description += `✅ **#${todo.id}** - ~~${todo.task}~~\n`;
+    });
+  }
+  
+  const embed = new EmbedBuilder()
+    .setColor(0x5865F2)
+    .setTitle(`📝 ${listName}`)
+    .setDescription(description)
+    .setFooter({ text: `${activeTodos.length} active(s) | ${completedTodos.length} complétée(s)` })
+    .setTimestamp();
+  
+  return embed;
+}
+
+async function publishListUpdate(interaction, guildId, listName) {
+  const guild = getGuild(guildId);
+  const list = getList(guildId, listName);
+  
+  if (!list) return;
+  
+  const embed = buildListEmbed(listName, list);
+  const channelId = interaction.channelId;
+  const dashboard = guild.dashboards.get(listName);
+  
+  try {
+    if (dashboard && dashboard.messageId) {
+      if (dashboard.channelId === channelId) {
+        try {
+          const channel = await client.channels.fetch(channelId);
+          const message = await channel.messages.fetch(dashboard.messageId);
+          await message.edit({ embeds: [embed] });
+          return;
+        } catch (error) {
+          if (error.code === 10008 || error.code === 50001) {
+            console.log(`⚠️ Message de dashboard introuvable pour la liste "${listName}", création d'un nouveau message...`);
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        try {
+          const oldChannel = await client.channels.fetch(dashboard.channelId);
+          const oldMessage = await oldChannel.messages.fetch(dashboard.messageId);
+          await oldMessage.delete();
+        } catch (error) {
+          console.log(`⚠️ Impossible de supprimer l'ancien message de dashboard pour la liste "${listName}"`);
+        }
+      }
+    }
+    
+    const newMessage = await interaction.channel.send({ embeds: [embed] });
+    guild.dashboards.set(listName, {
+      channelId: channelId,
+      messageId: newMessage.id
+    });
+    
+  } catch (error) {
+    console.error(`❌ Erreur lors de la mise à jour du dashboard pour la liste "${listName}":`, error);
+  }
 }
 
 const commands = [
@@ -272,7 +359,19 @@ client.on('interactionCreate', async interaction => {
         return await interaction.reply({ embeds: [embed], ephemeral: true });
       }
       
+      const dashboard = guild.dashboards.get(title);
+      if (dashboard && dashboard.messageId) {
+        try {
+          const channel = await client.channels.fetch(dashboard.channelId);
+          const message = await channel.messages.fetch(dashboard.messageId);
+          await message.delete();
+        } catch (error) {
+          console.log(`⚠️ Impossible de supprimer le message de dashboard pour la liste "${title}"`);
+        }
+      }
+      
       guild.lists.delete(title);
+      guild.dashboards.delete(title);
       
       const embed = new EmbedBuilder()
         .setColor(0xFF0000)
@@ -319,46 +418,12 @@ client.on('interactionCreate', async interaction => {
         .setTimestamp();
       
       await interaction.reply({ embeds: [embed], ephemeral: true });
+      
+      await publishListUpdate(interaction, guildId, listName);
     }
     
     else if (subcommand === 'view') {
-      if (list.tasks.length === 0) {
-        const embed = new EmbedBuilder()
-          .setColor(0xFFAA00)
-          .setTitle(`📝 ${listName}`)
-          .setDescription('Aucune tâche pour le moment.')
-          .setTimestamp();
-        
-        return await interaction.reply({ embeds: [embed] });
-      }
-      
-      const activeTodos = list.tasks.filter(t => !t.completed);
-      const completedTodos = list.tasks.filter(t => t.completed);
-      
-      let description = '';
-      
-      if (activeTodos.length > 0) {
-        description += '**📌 Tâches actives:**\n';
-        activeTodos.forEach((todo) => {
-          description += `${todo.id}. ⬜ ${todo.task}\n`;
-        });
-        description += '\n';
-      }
-      
-      if (completedTodos.length > 0) {
-        description += '**✅ Tâches complétées:**\n';
-        completedTodos.forEach((todo) => {
-          description += `${todo.id}. ✅ ~~${todo.task}~~\n`;
-        });
-      }
-      
-      const embed = new EmbedBuilder()
-        .setColor(0x0099FF)
-        .setTitle(`📝 ${listName}`)
-        .setDescription(description)
-        .setFooter({ text: `${activeTodos.length} active(s) | ${completedTodos.length} complétée(s)` })
-        .setTimestamp();
-      
+      const embed = buildListEmbed(listName, list);
       await interaction.reply({ embeds: [embed] });
     }
     
@@ -395,7 +460,9 @@ client.on('interactionCreate', async interaction => {
         .setFooter({ text: `Liste: ${listName} | Tâche #${todo.id}` })
         .setTimestamp();
       
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      
+      await publishListUpdate(interaction, guildId, listName);
     }
     
     else if (subcommand === 'delete') {
@@ -422,7 +489,9 @@ client.on('interactionCreate', async interaction => {
         .setFooter({ text: `Liste: ${listName} | Tâche #${deletedTodo.id}` })
         .setTimestamp();
       
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      
+      await publishListUpdate(interaction, guildId, listName);
     }
   }
 });
