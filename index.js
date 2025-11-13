@@ -94,6 +94,7 @@ const commands = [
             .setName('liste')
             .setDescription('Le nom de la liste (optionnel)')
             .setRequired(false)
+            .setAutocomplete(true)
         )
     )
     .addSubcommand(subcommand =>
@@ -105,6 +106,7 @@ const commands = [
             .setName('liste')
             .setDescription('Le nom de la liste (optionnel)')
             .setRequired(false)
+            .setAutocomplete(true)
         )
     )
     .addSubcommand(subcommand =>
@@ -122,6 +124,7 @@ const commands = [
             .setName('liste')
             .setDescription('Le nom de la liste (optionnel)')
             .setRequired(false)
+            .setAutocomplete(true)
         )
     )
     .addSubcommand(subcommand =>
@@ -139,6 +142,7 @@ const commands = [
             .setName('liste')
             .setDescription('Le nom de la liste (optionnel)')
             .setRequired(false)
+            .setAutocomplete(true)
         )
     )
 ].map(command => command.toJSON());
@@ -161,6 +165,29 @@ client.once('ready', async () => {
 });
 
 client.on('interactionCreate', async interaction => {
+  if (interaction.isAutocomplete()) {
+    if (interaction.commandName === 'todo') {
+      const focusedOption = interaction.options.getFocused(true);
+      
+      if (focusedOption.name === 'liste') {
+        const guildId = interaction.guildId;
+        const guild = getGuild(guildId);
+        
+        const choices = Array.from(guild.lists.keys()).map(listName => ({
+          name: listName,
+          value: listName
+        }));
+        
+        const filtered = choices.filter(choice =>
+          choice.name.toLowerCase().includes(focusedOption.value.toLowerCase())
+        ).slice(0, 25);
+        
+        await interaction.respond(filtered);
+      }
+    }
+    return;
+  }
+  
   if (!interaction.isChatInputCommand()) return;
   
   if (interaction.commandName === 'list') {
