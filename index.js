@@ -8,12 +8,24 @@ const client = new Client({
 });
 
 const todos = new Map();
+const todoCounters = new Map();
 
 function getTodos(guildId) {
   if (!todos.has(guildId)) {
     todos.set(guildId, []);
+    todoCounters.set(guildId, 0);
   }
   return todos.get(guildId);
+}
+
+function getNextId(guildId) {
+  if (!todoCounters.has(guildId)) {
+    todoCounters.set(guildId, 0);
+  }
+  const currentCount = todoCounters.get(guildId);
+  const nextId = currentCount + 1;
+  todoCounters.set(guildId, nextId);
+  return nextId;
 }
 
 const commands = [
@@ -87,8 +99,9 @@ client.on('interactionCreate', async interaction => {
     
     if (subcommand === 'add') {
       const task = interaction.options.getString('tache');
+      const newId = getNextId(guildId);
       guildTodos.push({
-        id: guildTodos.length + 1,
+        id: newId,
         task: task,
         completed: false,
         createdAt: new Date()
@@ -98,7 +111,7 @@ client.on('interactionCreate', async interaction => {
         .setColor(0x00FF00)
         .setTitle('✅ Tâche ajoutée')
         .setDescription(`**${task}**`)
-        .setFooter({ text: `Tâche #${guildTodos.length}` })
+        .setFooter({ text: `Tâche #${newId}` })
         .setTimestamp();
       
       await interaction.reply({ embeds: [embed] });
