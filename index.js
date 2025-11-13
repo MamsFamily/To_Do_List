@@ -318,7 +318,7 @@ client.on('interactionCreate', async interaction => {
         .setFooter({ text: `Liste: ${listName} | Tâche #${newId}` })
         .setTimestamp();
       
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({ embeds: [embed], ephemeral: true });
     }
     
     else if (subcommand === 'view') {

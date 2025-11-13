@@ -7,7 +7,8 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
 - ✅ Bot Discord fonctionnel avec discord.js v14
 - ✅ Système de listes multiples par serveur
 - ✅ Gestion complète des listes et tâches
-- ✅ Commandes slash implémentées
+- ✅ Commandes slash implémentées avec autocomplete
+- ✅ Messages éphémères pour confirmations d'ajout de tâches
 - ⏳ En attente du token Discord pour démarrer
 
 ## Architecture du projet
@@ -39,24 +40,25 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
 
 1. `/todo add` - Ajouter une nouvelle tâche
    - Paramètre: `tache` (texte de la tâche, requis)
-   - Paramètre: `liste` (nom de la liste, optionnel)
+   - Paramètre: `liste` (nom de la liste, optionnel avec autocomplete)
    - Si aucune liste n'est spécifiée, utilise la liste par défaut "Tâches"
+   - 🔒 Message de confirmation visible uniquement pour vous (éphémère)
    - Exemple: `/todo add tache:Acheter du pain liste:Courses`
 
 2. `/todo view` - Afficher les tâches d'une liste
-   - Paramètre: `liste` (nom de la liste, optionnel)
+   - Paramètre: `liste` (nom de la liste, optionnel avec autocomplete)
    - Affiche les tâches actives et complétées séparément
    - Compteur de tâches
    - Exemple: `/todo view liste:Courses`
 
 3. `/todo complete` - Marquer une tâche comme complétée
    - Paramètre: `numero` (numéro de la tâche, requis)
-   - Paramètre: `liste` (nom de la liste, optionnel)
+   - Paramètre: `liste` (nom de la liste, optionnel avec autocomplete)
    - Exemple: `/todo complete numero:1 liste:Courses`
 
 4. `/todo delete` - Supprimer une tâche
    - Paramètre: `numero` (numéro de la tâche, requis)
-   - Paramètre: `liste` (nom de la liste, optionnel)
+   - Paramètre: `liste` (nom de la liste, optionnel avec autocomplete)
    - Exemple: `/todo delete numero:2 liste:Courses`
 
 ### Caractéristiques techniques
@@ -68,6 +70,8 @@ Bot Discord en français pour gérer plusieurs listes de tâches par serveur. Ch
 - Numérotation automatique des tâches par liste
 - IDs de tâches uniques et persistants (ne sont jamais réutilisés)
 - Distinction visuelle entre tâches actives (⬜) et complétées (✅)
+- Autocomplete intelligent pour la sélection de listes (filtre en temps réel)
+- Messages éphémères pour les confirmations d'ajout (visibles uniquement par l'utilisateur)
 
 ## Configuration requise
 
